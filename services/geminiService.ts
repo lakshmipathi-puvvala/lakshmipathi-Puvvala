@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SimplifiedProfile } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || 'FAKE_API_KEY_FOR_DEVELOPMENT' });
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const simplifyWebhookData = async (data: any): Promise<SimplifiedProfile> => {
   try {

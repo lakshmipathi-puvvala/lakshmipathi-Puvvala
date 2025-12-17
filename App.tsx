@@ -5,8 +5,6 @@ import { AdminView } from './components/AdminView';
 import { AuthView } from './components/AuthView';
 import { simplifyWebhookData } from './services/geminiService';
 import { Link2, Send, Database, KeyRound, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, User as UserIcon, LayoutDashboard, ShieldCheck, LogOut } from 'lucide-react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Auth from './components/Auth';
 
 // Default Webhook URL (Internal/Backend)
 const DEFAULT_WEBHOOK_URL = 'https://n8n.srv898896.hstgr.cloud/webhook/6985e04a-cf39-4fd0-8248-92064764a230';
@@ -38,26 +36,7 @@ const INITIAL_USERS: AdminUserView[] = [
   { id: '2', name: 'Sarah Connor', email: 'sarah.c@skynet.net', role: 'user', status: 'offline', lastLogin: '2 mins ago', profilesProcessed: 124, password: 'password123' },
 ];
 
-function App() {
-  const { session, loading: authLoading, isPasswordRecovery } = useAuth();
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-900">
-        <div className="w-12 h-12 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  // Show password reset form when user clicks reset link from email
-  if (isPasswordRecovery) {
-    return <Auth initialView="reset-password" />;
-  }
-
-  if (!session) {
-    return <Auth />;
-  }
-
+export default function App() {
   // Auth State
   const [user, setUser] = useState<UserProfile | null>(null);
   const [allUsers, setAllUsers] = useState<AdminUserView[]>([]);
@@ -507,12 +486,3 @@ function App() {
     </div>
   );
 }
-
-// Wrap App with AuthProvider
-const AppWithAuth = () => (
-  <AuthProvider>
-    <App />
-  </AuthProvider>
-);
-
-export default AppWithAuth;
