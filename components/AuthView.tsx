@@ -8,8 +8,10 @@ interface AuthViewProps {
   userDatabase: AdminUserView[];
 }
 
+type AuthMode = 'signin' | 'signup';
+
 export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDatabase }) => {
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -22,29 +24,26 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
     e.preventDefault();
     setErrorMsg(null);
 
-    // 1. SIGN UP LOGIC
+    // 1. SIGN UP LOGIC (Users Only)
     if (authMode === 'signup') {
       if (email && password && firstName && lastName) {
-        // Prevent registering as the hardcoded admin (security)
         if (email.toLowerCase() === 'admin@gmail.com') {
           setErrorMsg("This email is reserved. Please sign in.");
           return;
         }
 
-        // Check if user already exists in DB
         const existingUser = userDatabase.find(u => u.email.toLowerCase() === email.toLowerCase());
         if (existingUser) {
           setErrorMsg("User already exists with this email. Please sign in.");
           return;
         }
 
-        // Create new user object for DB
         const newUser: AdminUserView = { 
             id: Date.now().toString(),
             name: `${firstName} ${lastName}`, 
             email, 
             role: 'user',
-            password: password, // Store password
+            password: password,
             status: 'active',
             lastLogin: 'Just now',
             profilesProcessed: 0
@@ -53,10 +52,9 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
         onRegister(newUser, rememberMe);
       }
     } 
-    // 2. SIGN IN LOGIC
+    // 2. SIGN IN LOGIC (User & Admin)
     else {
       if (email && password) {
-        // Consolidated Check: Search in DB for ANY user (Admin or Normal)
         const foundUser = userDatabase.find(u => u.email.toLowerCase() === email.toLowerCase());
         
         if (!foundUser) {
@@ -64,13 +62,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
             return;
         }
 
-        // Check Password
         if (foundUser.password !== password) {
             setErrorMsg("Incorrect password. Please try again.");
             return;
         }
 
-        // Successful Login
         const fName = foundUser.name.split(' ')[0] || 'User';
         const lName = foundUser.name.split(' ').slice(1).join(' ') || '';
         
@@ -80,23 +76,28 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
           email: foundUser.email, 
           role: foundUser.role 
         };
+        
+        // App.tsx handles the redirection logic based on role
         onLogin(profile, rememberMe);
       }
     }
   };
 
-  const toggleAuthMode = () => {
-    setAuthMode(authMode === 'signin' ? 'signup' : 'signin');
+  const switchMode = (mode: AuthMode) => {
+    setAuthMode(mode);
     setErrorMsg(null);
     setFirstName('');
     setLastName('');
+    setEmail('');
+    setPassword('');
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8 animate-fade-in relative overflow-hidden">
+      
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
          <div className="flex justify-center">
-            <div className="bg-blue-600 p-3 rounded-xl shadow-lg">
+            <div className="p-3 rounded-xl shadow-lg transition-colors duration-500 bg-blue-600">
               <Database className="w-8 h-8 text-white" />
             </div>
          </div>
@@ -108,8 +109,8 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
          </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow-xl shadow-slate-200/50 border border-slate-100 sm:rounded-xl sm:px-10">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        <div className="bg-white py-8 px-4 shadow-xl border sm:rounded-xl sm:px-10 transition-all duration-300 border-slate-100 shadow-slate-200/50">
           <form className="space-y-6" onSubmit={handleAuthSubmit}>
             
             {authMode === 'signup' && (
@@ -163,7 +164,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 sm:text-sm border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 border bg-white text-slate-900"
+                  className="block w-full pl-10 sm:text-sm border-slate-300 rounded-lg p-2.5 border bg-white text-slate-900 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="you@company.com"
                 />
               </div>
@@ -181,11 +182,11 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
                   id="password"
                   name="password"
                   type={showAuthPassword ? "text" : "password"}
-                  autoComplete={authMode === 'signin' ? "current-password" : "new-password"}
+                  autoComplete={authMode === 'signup' ? "new-password" : "current-password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-10 sm:text-sm border-slate-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 p-2.5 border bg-white text-slate-900"
+                  className="block w-full pl-10 pr-10 sm:text-sm border-slate-300 rounded-lg p-2.5 border bg-white text-slate-900 focus:ring-blue-500 focus:border-blue-500"
                   placeholder="••••••••"
                 />
                 <button
@@ -211,7 +212,7 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-slate-300 rounded cursor-pointer"
+                  className="h-4 w-4 border-slate-300 rounded cursor-pointer text-blue-600 focus:ring-blue-500"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-slate-900 cursor-pointer">
                   Remember me
@@ -221,13 +222,15 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
 
             {/* Error Message for Login */}
             {errorMsg && (
-              <div className="rounded-md bg-red-50 p-4 animate-fade-in">
+              <div className="rounded-md bg-red-50 p-4 animate-fade-in border border-red-100">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
                   </div>
                   <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Authentication Failed</h3>
+                    <h3 className="text-sm font-medium text-red-800">
+                      Authentication Failed
+                    </h3>
                     <div className="mt-2 text-sm text-red-700">
                       <p>{errorMsg}</p>
                     </div>
@@ -239,13 +242,14 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
             <div>
               <button
                 type="submit"
-                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                className="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
               >
                 {authMode === 'signin' ? 'Sign in' : 'Create Account'}
               </button>
             </div>
           </form>
 
+          {/* Footer Navigation */}
           <div className="mt-6">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
@@ -253,19 +257,19 @@ export const AuthView: React.FC<AuthViewProps> = ({ onLogin, onRegister, userDat
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white text-slate-500">
-                  {authMode === 'signin' ? 'New to LinkedinData?' : 'Already have an account?'}
+                  Or continue with
                 </span>
               </div>
             </div>
 
-            <div className="mt-4 flex justify-center">
-              <button
-                type="button"
-                onClick={toggleAuthMode}
-                className="text-blue-600 hover:text-blue-500 font-medium text-sm"
-              >
-                {authMode === 'signin' ? 'Create a new account' : 'Sign in to existing account'}
-              </button>
+            <div className="mt-6 flex flex-col gap-3 justify-center items-center">
+                 <button
+                   type="button"
+                   onClick={() => switchMode(authMode === 'signin' ? 'signup' : 'signin')}
+                   className="text-blue-600 hover:text-blue-500 font-medium text-sm flex items-center gap-1"
+                 >
+                   {authMode === 'signin' ? 'Create a new account' : 'Sign in to existing account'}
+                 </button>
             </div>
           </div>
         </div>

@@ -63,6 +63,8 @@ export default function App() {
       try {
         const savedUser = JSON.parse(savedUserJSON);
         setUser(savedUser);
+        // If admin is refreshing, stay on admin view if they were there? 
+        // For now, default to dashboard, but handleLogin logic below handles the redirect on fresh login.
       } catch (e) {
         localStorage.removeItem('linkindata_user');
       }
@@ -85,7 +87,13 @@ export default function App() {
 
   const handleLogin = (loggedInUser: UserProfile, rememberMe: boolean) => {
     setUser(loggedInUser);
-    setCurrentView('dashboard');
+    
+    // Auto-redirect to admin portal if admin
+    if (loggedInUser.role === 'admin') {
+      setCurrentView('admin');
+    } else {
+      setCurrentView('dashboard');
+    }
     
     // Update status in DB to active using functional update to ensure latest state
     setAllUsers(prevUsers => {
@@ -157,6 +165,7 @@ export default function App() {
     setAiSummary(null);
     setLinkedinUrl('');
     localStorage.removeItem('linkindata_user');
+    setCurrentView('dashboard'); // Reset view on logout
   };
 
   const handleProcess = async (e: React.FormEvent) => {
@@ -455,12 +464,14 @@ export default function App() {
                         </p>
                     </div>
                   </div>
-                  <div className="mt-3 pt-3 border-t border-slate-50 text-center">
-                    <p className="text-[10px] text-slate-400 font-medium">
-                      Powered by <span className="text-blue-600 font-semibold">magicteams.ai</span>
-                    </p>
-                  </div>
                 </div>
+              </div>
+
+              {/* Branding Footer Moved Here */}
+              <div className="text-left py-4 px-2">
+                 <p className="text-sm text-slate-500 font-medium">
+                   Powered by <span className="text-blue-600 font-bold text-base">magicteams.ai</span>
+                 </p>
               </div>
             </div>
 
