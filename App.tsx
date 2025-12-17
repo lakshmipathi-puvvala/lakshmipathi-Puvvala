@@ -7,7 +7,7 @@ import { simplifyWebhookData } from './services/geminiService';
 import { Link2, Send, Database, KeyRound, Loader2, AlertCircle, Eye, EyeOff, CheckCircle2, User as UserIcon, LayoutDashboard, ShieldCheck, LogOut } from 'lucide-react';
 
 // Default Webhook URL (Internal/Backend)
-const DEFAULT_WEBHOOK_URL = 'https://n8n.srv898896.hstgr.cloud/webhook-test/6985e04a-cf39-4fd0-8248-92064764a230';
+const DEFAULT_WEBHOOK_URL = 'https://n8n.srv898896.hstgr.cloud/webhook/6985e04a-cf39-4fd0-8248-92064764a230';
 
 // Default filters to send to backend
 const DEFAULT_FILTERS = [
