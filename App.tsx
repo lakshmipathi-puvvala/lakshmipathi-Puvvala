@@ -45,7 +45,7 @@ export default function App() {
   const [currentView, setCurrentView] = useState<'dashboard' | 'admin'>('dashboard');
 
   // App State
-  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('https://www.linkedin.com/posts/basheer-sheik-26048a17a_agentforceworldtour-salesforcechicago-data360-activity-7406887450444414977-6qPU?utm_source=share&utm_medium=member_desktop&rcm=ACoAAFHODDkBl48yj8ebfatO_eNienXdWE73S7k');
   const [serviceApiKey, setServiceApiKey] = useState('');
   const [showApiKey, setShowApiKey] = useState(false);
   
@@ -63,8 +63,6 @@ export default function App() {
       try {
         const savedUser = JSON.parse(savedUserJSON);
         setUser(savedUser);
-        // If admin is refreshing, stay on admin view if they were there? 
-        // For now, default to dashboard, but handleLogin logic below handles the redirect on fresh login.
       } catch (e) {
         localStorage.removeItem('linkindata_user');
       }
@@ -122,7 +120,6 @@ export default function App() {
     };
 
     // Update DB (State + LocalStorage)
-    // We strictly add the new user here.
     const updatedUsers = [...allUsers, userWithActiveStatus];
     setAllUsers(updatedUsers);
     localStorage.setItem('linkindata_db', JSON.stringify(updatedUsers));
@@ -163,7 +160,8 @@ export default function App() {
     setUser(null);
     setWebhookResponse(null);
     setAiSummary(null);
-    setLinkedinUrl('');
+    // Do not reset linkedinUrl so user can easily try again or copy
+    // setLinkedinUrl(''); 
     localStorage.removeItem('linkindata_user');
     setCurrentView('dashboard'); // Reset view on logout
   };

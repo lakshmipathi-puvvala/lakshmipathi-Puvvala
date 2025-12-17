@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SimplifiedProfile, WebhookResponse, LoadingState } from '../types';
-import { Bot, User, FileText, Table as TableIcon, ExternalLink, LayoutGrid, Download, Loader2 } from 'lucide-react';
+import { Bot, User, FileText, Table as TableIcon, ExternalLink, LayoutGrid, Download, Loader2, AlertTriangle } from 'lucide-react';
 
 interface ResponseViewProps {
   webhookData: WebhookResponse | null;
@@ -144,6 +144,19 @@ export const ResponseView: React.FC<ResponseViewProps> = ({ webhookData, aiSumma
         {activeTab === 'profile' && aiSummary ? (
           <div className="p-6 overflow-auto h-full custom-scrollbar">
             <div className="space-y-6 max-w-5xl mx-auto">
+              
+              {/* Error Display */}
+              {aiSummary.error && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3 text-red-700">
+                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="font-semibold text-sm">AI Processing Warning</h4>
+                        <p className="text-sm mt-1">{aiSummary.error}</p>
+                        <p className="text-xs mt-2 text-red-600">You can still try to view the raw webhook data in the console.</p>
+                    </div>
+                </div>
+              )}
+
               {/* Header Section */}
               {aiSummary.name && (
                 <div className="flex items-start gap-5 p-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-slate-50 rounded-xl border border-blue-100 shadow-sm">

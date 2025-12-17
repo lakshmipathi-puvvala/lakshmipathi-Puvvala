@@ -1,19 +1,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SimplifiedProfile } from "../types";
 
+// Helper for delay
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const simplifyWebhookData = async (data: any): Promise<SimplifiedProfile> => {
   try {
-    // Check for API Key before initialization to prevent crash and provide a helpful message
-    if (!process.env.API_KEY) {
-       console.error("API_KEY is missing in process.env");
+    const apiKey = process.env.API_KEY;
+
+    // Check for API Key before initialization
+    if (!apiKey || apiKey.trim() === '') {
+       console.error("API_KEY is missing or empty in environment variables.");
        return {
          summary: "Configuration Error",
-         error: "API Key is missing. Please add 'API_KEY' to your Netlify Environment Variables."
+         error: "API Key is missing. Please add 'API_KEY' to your Netlify Environment Variables (Site Settings > Environment variables)."
        };
     }
 
-    // Initialize the client here, lazily, so the app doesn't crash on load if key is missing
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    // Initialize the client lazily
+    const ai = new GoogleGenAI({ apiKey: apiKey });
 
     const dataString = JSON.stringify(data).substring(0, 30000); // Limit size for token constraints
 
@@ -42,7 +47,7 @@ export const simplifyWebhookData = async (data: any): Promise<SimplifiedProfile>
       If the input is a list (array), generate a row for each item. 
       If a field is missing, leave it empty or put "-".`;
 
-    const response = await ai.models.generateContent({
+    const modelParams = {
       model: "gemini-2.5-flash",
       contents: [
         {
@@ -83,7 +88,33 @@ export const simplifyWebhookData = async (data: any): Promise<SimplifiedProfile>
           required: ["summary", "tableHeaders", "tableRows"]
         }
       }
-    });
+    };
+
+    // Retry Logic for 503 Errors
+    let response;
+    let attempts = 0;
+    const maxAttempts = 4; // Try up to 4 times
+
+    while (true) {
+      try {
+        attempts++;
+        response = await ai.models.generateContent(modelParams);
+        break; // Success! Exit loop.
+      } catch (err: any) {
+        // Check if error is 503 or related to overloading
+        const isOverloaded = err?.message?.includes('503') || err?.status === 503 || err?.code === 503 || err?.message?.toLowerCase().includes('overloaded');
+        
+        if (isOverloaded && attempts < maxAttempts) {
+           const waitTime = 2000 * attempts; // Backoff: 2s, 4s, 6s
+           console.warn(`Gemini API Overloaded (503). Retrying attempt ${attempts}/${maxAttempts} in ${waitTime}ms...`);
+           await delay(waitTime);
+           continue; // Retry
+        }
+        
+        // If it's another error or we ran out of retries, throw it
+        throw err;
+      }
+    }
 
     const text = response.text;
     if (!text) {
@@ -94,7 +125,7 @@ export const simplifyWebhookData = async (data: any): Promise<SimplifiedProfile>
   } catch (error) {
     console.error("Gemini simplification failed:", error);
     return {
-      summary: "Failed to generate AI summary. Please view the raw data.",
+      summary: "Failed to generate AI summary. The AI model might be overloaded or the data format is unexpected.",
       error: error instanceof Error ? error.message : "Unknown AI error"
     };
   }
