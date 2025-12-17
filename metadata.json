@@ -1,5 +1,5 @@
 {
-  "name": "LinkData Formatter",
+  "name": "LinkedinData Formatter",
   "description": "A tool to send LinkedIn URLs to a webhook and simplify the response using Gemini.",
   "requestFramePermissions": []
 }

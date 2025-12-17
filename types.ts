@@ -21,3 +21,23 @@ export enum LoadingState {
   COMPLETE = 'COMPLETE',
   ERROR = 'ERROR'
 }
+
+export type UserRole = 'user' | 'admin';
+
+export interface UserProfile {
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+}
+
+export interface AdminUserView {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  status: 'active' | 'offline';
+  lastLogin: string;
+  profilesProcessed: number;
+  password?: string; // Added to store password for admin view
+}

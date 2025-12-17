@@ -1,14 +1,33 @@
 import React, { useState } from 'react';
-import { SimplifiedProfile, WebhookResponse } from '../types';
-import { Bot, User, FileText, Table as TableIcon, ExternalLink, LayoutGrid } from 'lucide-react';
+import { SimplifiedProfile, WebhookResponse, LoadingState } from '../types';
+import { Bot, User, FileText, Table as TableIcon, ExternalLink, LayoutGrid, Download, Loader2 } from 'lucide-react';
 
 interface ResponseViewProps {
   webhookData: WebhookResponse | null;
   aiSummary: SimplifiedProfile | null;
+  loadingState: LoadingState;
 }
 
-export const ResponseView: React.FC<ResponseViewProps> = ({ webhookData, aiSummary }) => {
+export const ResponseView: React.FC<ResponseViewProps> = ({ webhookData, aiSummary, loadingState }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'table'>('profile'); // Default to profile view
+
+  const isLoading = loadingState === LoadingState.SENDING_WEBHOOK || loadingState === LoadingState.PROCESSING_AI;
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col items-center justify-center p-8 animate-fade-in">
+         <div className="bg-blue-50 p-4 rounded-full mb-4 animate-pulse">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+         </div>
+         <h3 className="text-xl font-semibold text-slate-900">Processing Data</h3>
+         <p className="text-slate-500 mt-2 text-center max-w-sm">
+            {loadingState === LoadingState.SENDING_WEBHOOK 
+              ? "Fetching data from external source..." 
+              : "Analyzing and formatting with Gemini..."}
+         </p>
+      </div>
+    );
+  }
 
   if (!webhookData && !aiSummary) {
     return (
@@ -45,32 +64,78 @@ export const ResponseView: React.FC<ResponseViewProps> = ({ webhookData, aiSumma
     return content;
   };
 
+  // CSV Download Handler
+  const handleDownloadCSV = () => {
+    if (!hasTableData || !aiSummary) return;
+
+    const headers = aiSummary.tableHeaders || [];
+    const rows = aiSummary.tableRows || [];
+
+    // Function to escape special characters for CSV
+    const escape = (text: string) => {
+        if (!text) return '';
+        const str = String(text);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    };
+
+    const csvContent = [
+        headers.map(escape).join(','),
+        ...rows.map(row => row.map(escape).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `${(aiSummary.name || 'data_export').replace(/[^a-z0-9]/gi, '_').toLowerCase()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden h-full flex flex-col animate-fade-in">
-      <div className="flex border-b border-slate-100 bg-slate-50/50">
-        <button
-          onClick={() => setActiveTab('profile')}
-          className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
-            activeTab === 'profile'
-              ? 'border-blue-600 text-blue-700 bg-white'
-              : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
-          }`}
-        >
-          <LayoutGrid className="w-4 h-4" />
-          Profile View
-        </button>
-        
-        {hasTableData && (
-          <button
-            onClick={() => setActiveTab('table')}
+      <div className="flex border-b border-slate-100 bg-slate-50/50 justify-between items-center pr-4">
+        <div className="flex">
+            <button
+            onClick={() => setActiveTab('profile')}
             className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
-              activeTab === 'table'
+                activeTab === 'profile'
                 ? 'border-blue-600 text-blue-700 bg-white'
                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
             }`}
+            >
+            <LayoutGrid className="w-4 h-4" />
+            Profile View
+            </button>
+            
+            {hasTableData && (
+            <button
+                onClick={() => setActiveTab('table')}
+                className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-colors border-b-2 ${
+                activeTab === 'table'
+                    ? 'border-blue-600 text-blue-700 bg-white'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-100'
+                }`}
+            >
+                <TableIcon className="w-4 h-4" />
+                Data Table
+            </button>
+            )}
+        </div>
+
+        {/* Download Button */}
+        {hasTableData && (
+          <button
+            onClick={handleDownloadCSV}
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-md hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-all shadow-sm"
+            title="Download for Google Sheets/Excel"
           >
-            <TableIcon className="w-4 h-4" />
-            Data Table
+            <Download className="w-3.5 h-3.5" />
+            Export CSV
           </button>
         )}
       </div>
