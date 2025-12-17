@@ -1,11 +1,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SimplifiedProfile } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 export const simplifyWebhookData = async (data: any): Promise<SimplifiedProfile> => {
   try {
-    const dataString = JSON.stringify(data).substring(0, 30000); // Increased limit for larger datasets
+    // Check for API Key before initialization to prevent crash and provide a helpful message
+    if (!process.env.API_KEY) {
+       console.error("API_KEY is missing in process.env");
+       return {
+         summary: "Configuration Error",
+         error: "API Key is missing. Please add 'API_KEY' to your Netlify Environment Variables."
+       };
+    }
+
+    // Initialize the client here, lazily, so the app doesn't crash on load if key is missing
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+    const dataString = JSON.stringify(data).substring(0, 30000); // Limit size for token constraints
 
     const promptText = `Analyze the following raw data returned from a LinkedIn scraping/webhook service. 
       
